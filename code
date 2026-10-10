@@ -1,0 +1,135 @@
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+
+class Creature {
+protected:
+	std::string m_name;
+	char		m_symbol;
+	int			m_health;
+	int			AttackDamageToOpponent;
+	int			EssenseGold;
+
+public:
+	Creature(std::string name, char symbol, int health, int attackDamage, int gold)
+		: m_name(name), m_symbol(symbol), m_health(health), AttackDamageToOpponent(attackDamage), EssenseGold(gold) { }
+
+	std::string getName() { return m_name; }
+	char		getSymbol() { return m_symbol; }
+	int			getHealth() { return m_health; }
+	int			getAttackDamage() { return AttackDamageToOpponent; }
+	int			getGold() { return EssenseGold; }
+
+	void reduceHealth(int decreaseHealth) { m_health -= decreaseHealth; }
+	bool isDead() { if (m_health <= 0) { return true; } else { return false; } }
+	void addGold(int additionGold) { EssenseGold += additionGold; }
+};
+
+class Player : public Creature {
+private:
+	int level = 0;
+public:
+	Player(int PLevel, std::string PName, char PSymbol, int PHealth, int Damage, int PGold)
+		: level(PLevel), Creature(PName, PSymbol, PHealth, Damage, PGold) {
+	}
+
+	void levelUp() { level++; AttackDamageToOpponent++; }
+	int  getLevel() { return level; }
+	bool HasWon() { if (level >= 20) { return true; } else { return false; } }
+};
+
+class Monster : public Creature {
+public:
+	enum Type {
+		DRAGON,
+		ORC,
+		SLIME,
+		MAX_TYPES
+	};
+	struct MonsterData {
+		const char* name;
+		char		symbol;
+		int			health;
+		int			damage;
+		int			gold;
+	};
+
+	static MonsterData monsterData[MAX_TYPES];
+
+	Monster(Type type)
+		: Creature(monsterData[type].name, monsterData[type].symbol, monsterData[type].health, monsterData[type].damage, monsterData[type].gold) 
+	{}
+
+	static Monster getRandomMonster() {int num = rand() % MAX_TYPES; return Monster(static_cast<Type>(num));; }
+};
+
+Monster::MonsterData Monster::monsterData[Monster::MAX_TYPES]
+{
+	{ "dragon", 'D', 1, 4, 100 },
+	{ "orc", 'o', 1, 2, 25 },
+	{ "slime", 's', 1, 1, 10 }
+};
+
+char fightMonster(char &PChoose) {
+	std::cin >> PChoose;
+
+	if (PChoose == 'R' || PChoose == 'F') { return PChoose; }
+	else {
+		std::cout << "Wrong choose!";
+	}
+}
+
+int main()
+{
+	//enter name
+	std::string EnteredName = "";
+	std::cout << "Enter player name: ";
+	std::cin >> EnteredName;
+	std::cout << "\nWelcome, " << EnteredName << "\n";
+
+	//class
+	Player p(1, EnteredName, '@', 10, 1, 0);
+	char choose = ' '; // free symbol
+
+	srand(static_cast<unsigned int>(time(0))); // устанавливаем значение системных часов в качестве стартового числа
+	rand(); // сбрасываем первый результат
+
+	//run/fight
+	while (p.getLevel() < 20 && !p.isDead()) {
+		Monster m = Monster::getRandomMonster();
+		std::cout << "You have encountered a " << m.getName() << "\n";
+		while (!m.isDead() && !p.isDead())
+		{
+			fightMonster(choose);
+
+			if (choose == 'R')
+			{
+				std::cout << "You successfully fled.\n";
+				std::cout << "You have encountered a " << m.getName() << "\n";
+				break;
+			}
+			if (choose == 'F') {
+				std::cout << "You hit the " << m.getName() << " for " << p.getAttackDamage() << " damage.\n";
+				m.reduceHealth(p.getAttackDamage());
+				std::cout << m.getName() << " have " << m.getHealth() << " health.\n";
+				if (m.getHealth() > 0) {
+					std::cout << "The " << m.getName() << " hit you for " << m.getAttackDamage() << " damage.\n";
+					p.reduceHealth(m.getAttackDamage());
+					std::cout << "You have " << p.getHealth() << " health.\n";
+				}
+				else {
+					std::cout << "You killed the " << m.getName() << ".\n";
+					p.levelUp();
+					std::cout << "Current level: " << p.getLevel() << ".\n";
+					break;
+				}
+			}
+		}
+		
+	}
+
+	if (p.getLevel() >= 20) { std::cout << "You won!"; }
+
+	return 0;
+}
